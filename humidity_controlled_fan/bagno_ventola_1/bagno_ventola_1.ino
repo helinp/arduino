@@ -1,24 +1,40 @@
-/* ------------------------------------
+/* -------------------------------------------------------------------------
    Humidity activated fan system
    
    https://github.com/helinp
    
    by Pierre Helin
  
- ------------------------------------*/
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+---------------------------------------------------------------------------*/
+
  
-// min humidity to power on the fan 
+// humidity threshold to power on the fan 
 const float fan_humidity = 70.00;
 
 // time between probes (ms)
-const int seconds_wait = 5000;
+const int milli_wait = 7000;
 
-// number of successful probes before activating fan
-int n_probes = 3;
+// number of probes before activating fan
+const int n_probes = 2;
 
 // define pins
 #define DHTPIN 2 
 #define RELPIN 4 
+
+/* No need to modify below this line */
 
 // Setup the Low power functions library (by https://github.com/jcw/jeelib)
 #include <JeeLib.h>  
@@ -31,21 +47,6 @@ DHT dht(DHTPIN, DHT22);
 // declare globals variables
 int over_level, below_level = 0;
 
-void blinkLed() {
-
-  int led = 13;
-  int n_blinks = 3;
-  
-  pinMode(led, OUTPUT);
-   
-  while(n_blinks--) {
-    digitalWrite(led, HIGH);   
-    delay(100);               
-    digitalWrite(led, LOW);   
-    delay(100);               
-  }
-}
-
 void setup() {
   
   // debug purpose only
@@ -55,16 +56,25 @@ void setup() {
   dht.begin();
   
   pinMode(RELPIN, OUTPUT);
-  digitalWrite(RELPIN, HIGH);
   
-  // test DHT
-  if (dht.readHumidity() != 0.00) blinkLed();
+  // test relay
+  digitalWrite(RELPIN, HIGH);
+  Sleepy::loseSomeTime(5000);
+  digitalWrite(RELPIN, LOW);
+  
+  // test DHT, runs fan if OK
+  if (dht.readHumidity() != 0.00) 
+  {
+    digitalWrite(RELPIN, HIGH);
+    Sleepy::loseSomeTime(5000);
+    digitalWrite(RELPIN, LOW);
+  }
 }
 
 void loop() {
   
   // delay(5000);
-  Sleepy::loseSomeTime(seconds_wait);
+  Sleepy::loseSomeTime(milli_wait);
    
   // read humidity
   float humidity = dht.readHumidity();
